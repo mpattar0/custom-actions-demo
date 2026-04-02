@@ -1,5 +1,16 @@
 name: "Deploy to AWS s3"
 description: "Action to deploy files to an AWS S3 bucket"
+inputs:
+  bucket:
+    description: "The S3 bucket name."
+    required: true
+  bucket-region:
+    description: "The region of the s3 bucket."
+    required: false
+    default: "us-east-1"
+  dist-folder:
+    description: "The folder containing the files to be deployed."
+    required: true
 runs:
   using: "node20"
   main: "main.js"

@@ -3,6 +3,18 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      bucket:
+        description: "The S3 bucket name."
+        required: true
+      bucket-region:
+        description: "The region of the s3 bucket."
+        required: false
+        default: "us-east-1"
+      dist-folder:
+        description: "The folder containing the files to be deployed."
+        required: true
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -73,3 +85,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Run Custom Action
         uses: ./.github/actions/deploy-s3-javascript
+        with:
+          bucket: ${{ github.event.inputs.bucket }}
+          bucket-region: ${{ github.event.inputs.bucket-region }}
+          dist-folder: ${{ github.event.inputs.dist-folder }}
