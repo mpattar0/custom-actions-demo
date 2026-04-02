@@ -2,5 +2,4 @@ name: "Deploy to AWS s3"
 description: "Action to deploy files to an AWS S3 bucket"
 runs:
   using: "node20"
-  pre: "install.js"
   main: "main.js"
