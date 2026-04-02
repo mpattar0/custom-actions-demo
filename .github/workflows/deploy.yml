@@ -76,7 +76,11 @@ jobs:
       - name: Output contents
         run: ls
       - name: Deploy site
-        run: echo "Deploying..."
+        uses: ./.github/actions/deploy-s3-javascript
+        with:
+          bucket: ${{ secrets.S3_BUCKET }}
+          bucket-region: us-east-1
+          dist-folder: ./dist
 
   information:
     runs-on: ubuntu-latest
