@@ -18,6 +18,8 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    env:
+      My_VARIABLE: "value"
     steps:
       - name: Get code
         uses: actions/checkout@v4
