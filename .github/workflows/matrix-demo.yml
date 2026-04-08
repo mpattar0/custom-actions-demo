@@ -1,0 +1,39 @@
+name: Matrix Build Demo
+
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+
+jobs:
+    build-app:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-ver: [18, 20, 22]
+                os: [ubuntu-latest, windows-latest]
+        steps:
+            - name: Get code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js ${{ matrix.node-ver }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-ver }}
+
+            - name: Print Node version
+              run: node --version
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build application
+              run: npm run build
+
+            - name: Print matrix info
+              run: |
+                  echo "Running on OS    : ${{ matrix.os }}"
+                  echo "Node version     : ${{ matrix.node-ver }}"
+                  echo "Job triggered by : ${{ github.actor }}"
+                  echo "Branch           : ${{ github.ref_name }}"
