@@ -1,0 +1,59 @@
+name: Environment Variables Demo
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Target environment"
+                required: true
+                type: choice
+                options:
+                    - dev
+                    - staging
+                    - prod
+            branch:
+                description: "Branch name to deploy from"
+                required: true
+                type: string
+                default: "main"
+            resource-group:
+                description: "Azure Resource Group name"
+                required: true
+                type: string
+            subscription:
+                description: "Azure Subscription name or ID"
+                required: true
+                type: string
+
+env:
+    ENVIRONMENT: ${{ inputs.environment }}
+    BRANCH: ${{ inputs.branch }}
+    RESOURCE_GROUP: ${{ inputs.resource-group }}
+    SUBSCRIPTION: ${{ inputs.subscription }}
+
+jobs:
+    show-env:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Print all inputs as env variables
+              run: |
+                  echo "========== Workflow Inputs =========="
+                  echo "Environment   : $ENVIRONMENT"
+                  echo "Branch        : $BRANCH"
+                  echo "Resource Group: $RESOURCE_GROUP"
+                  echo "Subscription  : $SUBSCRIPTION"
+                  echo "====================================="
+
+            - name: Use env in step-level override
+              env:
+                  STEP_NOTE: "This is a step-level env variable"
+              run: |
+                  echo "Step note     : $STEP_NOTE"
+                  echo "Env still set : $ENVIRONMENT"
+
+            - name: Demonstrate job context
+              run: |
+                  echo "Triggered by  : ${{ github.actor }}"
+                  echo "Workflow      : ${{ github.workflow }}"
+                  echo "Run ID        : ${{ github.run_id }}"
+                  echo "Ref           : ${{ github.ref_name }}"
