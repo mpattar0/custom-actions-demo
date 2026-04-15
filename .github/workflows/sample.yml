@@ -1,0 +1,112 @@
+name: Sample Workflow Demo
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Target environment"
+                required: true
+                type: choice
+                options:
+                    - dev
+                    - staging
+                    - prod
+            run-tests:
+                description: "Run tests?"
+                required: false
+                type: boolean
+                default: true
+
+env:
+    APP_NAME: my-sample-app
+    NODE_VERSION: "20"
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get code
+              uses: actions/checkout@v4
+
+            - name: Load & Cache Dependencies
+              uses: ./.github/actions/cached-deps
+
+            - name: Lint code
+              run: npm run lint
+
+    test:
+        runs-on: ubuntu-latest
+        needs: lint
+        if: inputs.run-tests == true
+        steps:
+            - name: Get code
+              uses: actions/checkout@v4
+
+            - name: Load & Cache Dependencies
+              uses: ./.github/actions/cached-deps
+
+            - name: Run tests
+              id: run-tests
+              run: npm run test
+
+            - name: Upload test report
+              if: failure() && steps.run-tests.outcome == 'failure'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: test-report
+                  path: test.json
+                  retention-days: 7
+
+    build:
+        runs-on: ubuntu-latest
+        needs: test
+        outputs:
+            artifact-name: ${{ steps.set-output.outputs.artifact-name }}
+        steps:
+            - name: Get code
+              uses: actions/checkout@v4
+
+            - name: Load & Cache Dependencies
+              uses: ./.github/actions/cached-deps
+
+            - name: Build application
+              run: npm run build
+
+            - name: Set artifact output
+              id: set-output
+              run: echo "artifact-name=dist-${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+            - name: Upload build artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ steps.set-output.outputs.artifact-name }}
+                  path: dist/
+                  retention-days: 7
+
+    deploy:
+        runs-on: ubuntu-latest
+        needs: build
+        environment: ${{ inputs.environment }}
+        steps:
+            - name: Get code
+              uses: actions/checkout@v4
+
+            - name: Download build artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: ${{ needs.build.outputs.artifact-name }}
+                  path: ./dist
+
+            - name: Print deploy info
+              run: |
+                  echo "========================================="
+                  echo "App Name    : $APP_NAME"
+                  echo "Environment : ${{ inputs.environment }}"
+                  echo "Branch      : ${{ github.ref_name }}"
+                  echo "Triggered by: ${{ github.actor }}"
+                  echo "Run ID      : ${{ github.run_id }}"
+                  echo "Artifact    : ${{ needs.build.outputs.artifact-name }}"
+                  echo "========================================="
+
+            - name: Deploy
+              run: echo "Deploying $APP_NAME to ${{ inputs.environment }}..."
