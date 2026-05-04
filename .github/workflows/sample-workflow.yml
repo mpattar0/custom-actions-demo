@@ -1,0 +1,139 @@
+# Sample GitHub Actions Workflow
+# Demonstrates: triggers, jobs, steps, env vars, secrets, artifacts, and job dependency
+
+name: Sample CI/CD Workflow
+
+# ─── Triggers ───────────────────────────────────────────────
+on:
+    push:
+        branches:
+            - main
+            - dev
+    pull_request:
+        branches:
+            - main
+    workflow_dispatch:
+        # Manual trigger from GitHub UI
+        inputs:
+            environment:
+                description: "Target environment"
+                required: true
+                default: "staging"
+                type: choice
+                options:
+                    - staging
+                    - production
+
+# ─── Workflow-level Environment Variables ────────────────────
+env:
+    APP_NAME: SampleApp
+    NODE_VERSION: "18"
+
+# ─── Jobs ────────────────────────────────────────────────────
+jobs:
+
+    # ── Job 1: Build ──────────────────────────────────────────
+    build:
+        name: Build Application
+        runs-on: ubuntu-latest
+
+        # Job-level env variable
+        env:
+            BUILD_CONFIG: Release
+
+        steps:
+            # Step 1: Checkout source code
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            # Step 2: Setup Node.js
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "npm"
+
+            # Step 3: Install dependencies
+            - name: Install Dependencies
+              run: npm ci
+
+            # Step 4: Build the app
+            - name: Build
+              run: npm run build --if-present
+              env:
+                  NODE_ENV: production # Step-level env variable
+
+            # Step 5: Upload build artifacts
+            - name: Upload Build Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-output
+                  path: ./dist
+                  retention-days: 7
+
+    # ── Job 2: Test ───────────────────────────────────────────
+    test:
+        name: Run Tests
+        runs-on: ubuntu-latest
+        needs: build # Runs only after build succeeds
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "npm"
+
+            - name: Install Dependencies
+              run: npm ci
+
+            - name: Run Unit Tests
+              run: npm test
+
+            - name: Upload Test Results
+              uses: actions/upload-artifact@v4
+              if: always() # Upload even if tests fail
+              with:
+                  name: test-results
+                  path: ./test-results
+                  retention-days: 7
+
+    # ── Job 3: Deploy ─────────────────────────────────────────
+    deploy:
+        name: Deploy Application
+        runs-on: ubuntu-latest
+        needs: [ build, test ] # Runs only after BOTH build and test succeed
+        environment: staging # Links to GitHub environment (approval gate)
+
+        # Only deploy on push to main or manual trigger
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            # Download the build artifact from Job 1
+            - name: Download Build Artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: build-output
+                  path: ./dist
+
+            # Use a secret for deployment
+            - name: Deploy to Server
+              run: |
+                  echo "Deploying ${{ env.APP_NAME }} to ${{ github.event.inputs.environment || 'staging' }}"
+                  echo "Triggered by: ${{ github.actor }}"
+                  echo "Branch: ${{ github.ref_name }}"
+                  echo "Commit: ${{ github.sha }}"
+                  # Add your deployment script here
+                  # e.g., az webapp deploy or aws s3 sync
+              env:
+                  DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }} # Using a GitHub secret
+
+            # Notify on success
+            - name: Notify Success
+              run: echo "::notice::Deployment of ${{ env.APP_NAME }} completed successfully!"
