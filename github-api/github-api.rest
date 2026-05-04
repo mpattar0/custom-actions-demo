@@ -1,0 +1,12 @@
+# ============================================================
+# GitHub REST API - Learning Examples
+# Use with VS Code REST Client extension
+# Instructions:
+#   1. Replace YOUR_GITHUB_PAT_HERE with your actual PAT
+#   2. Click "Send Request" above any ### block to run it
+# ============================================================
+
+@baseUrl = https://api.github.com
+@token = YOUR_GITHUB_PAT_HERE
+@owner = mpattar0
+@repo = custom-actions-demo
