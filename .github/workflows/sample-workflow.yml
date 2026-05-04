@@ -5,24 +5,14 @@ name: Sample CI/CD Workflow
 
 # ─── Triggers ───────────────────────────────────────────────
 on:
-    push:
-        branches:
-            - main
-            - dev
-    pull_request:
-        branches:
-            - main
-    workflow_dispatch:
-        # Manual trigger from GitHub UI
-        inputs:
-            environment:
-                description: "Target environment"
-                required: true
-                default: "staging"
-                type: choice
-                options:
-                    - staging
-                    - production
+    # Triggers when an issue is opened or edited
+    issues:
+        types: [ opened, edited ]
+
+    # Triggers when a comment is created on an issue
+    issue_comment:
+        types:
+            - created
 
 # ─── Workflow-level Environment Variables ────────────────────
 env:
