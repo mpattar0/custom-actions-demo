@@ -13,8 +13,9 @@ on:
     issue_comment:
         types:
             - created
+    # Pull request checking
 
-# ─── Workflow-level Environment Variables ────────────────────
+    # ─── Workflow-level Environment Variables ────────────────────
 env:
     APP_NAME: SampleApp
     NODE_VERSION: "18"
